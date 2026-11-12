@@ -40,9 +40,10 @@ The command prints the reservation list as JSON. Each item includes the child na
 Options:
 
 - `--parallel N`: number of worker threads (default: `6`; minimum: `1`).
-- `--force-auth`: discard the cached session and log in again.
+- `--force-auth`: ignore the cached session and log in again during a scan.
+- `--force-scan`: ignore cached reservations and fetch fresh data.
 
-The session cookie is cached at `~/.cache/clem/session.json` so the CLI can avoid unnecessary logins. Any fetch or parsing failure aborts the run rather than returning partial results.
+The session cookie is cached at `~/.cache/clem/session.json`. Successful scans save reservation JSON at `~/.cache/clem/reservations.json`; its modification time determines whether it is still fresh (two hours). A fresh cache hit makes no portal API or login requests and logs its age to stderr. Use `--force-scan` to bypass it. Any fetch or parsing failure aborts the run rather than returning partial results.
 
 ## Scope and limitations
 
