@@ -7,6 +7,7 @@ Credentials: env CLEM_USERNAME / CLEM_PASSWORD win, else ~/.config/clem/config.t
 import os
 import tomllib
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from .errors import ClemError
 
@@ -15,6 +16,7 @@ CONFIG_PATH = Path.home() / ".config" / "clem" / "config.toml"
 SESSION_PATH = Path.home() / ".cache" / "clem" / "session.json"
 RESULT_CACHE_PATH = SESSION_PATH.with_name("reservations.json")
 RESULT_CACHE_TTL_SECONDS = 2 * 60 * 60
+RESERVATION_TIMEZONE = ZoneInfo("Europe/Paris")
 
 
 def load_credentials(config_path: Path = CONFIG_PATH) -> tuple[str, str]:

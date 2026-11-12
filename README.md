@@ -2,7 +2,7 @@
 
 `clem` is a read-only command-line client for downloading reservation data from the [Thoiry Espace Citoyens portal](https://www.espace-citoyens.net/thoiry/espace-citoyens/).
 
-It logs into the household account, reads the dashboard registrations, and returns booked days for all children and registrations as a JSON array. Progress is written to stderr; JSON or a structured error is written to stdout. The tool does not create, change, or cancel reservations. It is an independent project and is not affiliated with or endorsed by the portal or the municipality.
+The CLI reads the household account's dashboard and reservation calendar. `get-all-reservations` returns all booked days as JSON; `check-reservation` filters those same cached records by child and date. Progress is written to stderr; JSON or a structured error is written to stdout. The tool does not create, change, or cancel reservations. It is an independent project and is not affiliated with or endorsed by the portal or the municipality.
 
 ## Requirements
 
@@ -29,21 +29,31 @@ Keep credentials and the cached session private; never commit them.
 
 ## Run
 
-Fetch reservations with four worker threads:
+Get every reservation as JSON:
 
 ```sh
-uv run clem --parallel 4
+uv run clem get-all-reservations --parallel 4
 ```
 
-The command prints the reservation list as JSON. Each item includes the child name, activity, place, unit, date, quantity, and whether that day is editable. Treat the output as personal information and avoid sharing or publishing it.
+Check one child's reservations for the current Monday–Friday work week:
 
-Options:
+```sh
+uv run clem check-reservation --kid "Child Name"
+```
 
-- `--parallel N`: number of worker threads (default: `6`; minimum: `1`).
-- `--force-auth`: ignore the cached session and log in again during a scan.
-- `--force-scan`: ignore cached reservations and fetch fresh data.
+The default date range is Monday through Friday of the current week in `Europe/Paris`. Supply either or both inclusive bounds explicitly; dates use `YYYY-MM-DD`:
 
-The session cookie is cached at `~/.cache/clem/session.json`. Successful scans save reservation JSON at `~/.cache/clem/reservations.json`; its modification time determines whether it is still fresh (two hours). A fresh cache hit makes no portal API or login requests and logs its age to stderr. Use `--force-scan` to bypass it. Any fetch or parsing failure aborts the run rather than returning partial results.
+```sh
+uv run clem check-reservation --kid "Child Name" --start-date 2026-11-09 --end-date 2026-11-13 --format pretty
+```
+
+`--format json` is the default and returns the matching records unchanged from the all-reservations data. `--format pretty` groups every day in the range by ISO year/week and prints `Mon Nov 9: …`; dates without matches say `no reservations`.
+
+Each JSON record includes the child name, activity, place, unit, date, quantity, and whether that day is editable. Treat the output as personal information and avoid sharing or publishing it.
+
+Options `--parallel`, `--force-auth`, and `--force-scan` are available on both commands. `--force-scan` bypasses the two-hour result cache; combine it with `--force-auth` to discard the saved session and log in again.
+
+The session cookie is cached at `~/.cache/clem/session.json`. Successful scans save reservation JSON at `~/.cache/clem/reservations.json`; its modification time determines whether it is still fresh (two hours). A fresh cache hit makes no portal API or login requests and logs its age to stderr. Any fetch or parsing failure aborts the run rather than returning partial results.
 
 ## Scope and limitations
 
