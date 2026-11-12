@@ -8,6 +8,10 @@ from typing import Optional
 
 import typer
 from pydantic import TypeAdapter, ValidationError
+from rich import box
+from rich.console import Console
+from rich.table import Table
+from rich.text import Text
 
 from .client import Client
 from .config import RESULT_CACHE_PATH, RESULT_CACHE_TTL_SECONDS, RESERVATION_TIMEZONE
@@ -124,32 +128,53 @@ def _filter_reservations(
     ]
 
 
-def _format_pretty(reservations: list[Reservation], start_date: date, end_date: date) -> str:
+def _print_pretty(reservations: list[Reservation], start_date: date, end_date: date) -> None:
     by_date: dict[date, list[Reservation]] = {}
     for reservation in reservations:
         by_date.setdefault(reservation.date, []).append(reservation)
 
-    lines = []
+    console = Console(file=sys.stdout, highlight=False)
     current = start_date
     current_week = None
+    table: Table | None = None
     while current <= end_date:
         iso_date = current.isocalendar()
         week = (iso_date.year, iso_date.week)
         if week != current_week:
-            if lines:
-                lines.append("")
-            lines.append(f"{iso_date.year}-W{iso_date.week:02d}")
+            if table is not None:
+                console.print(table)
+            table = Table(
+                title=Text(
+                    f"{iso_date.year} · Week {iso_date.week:02d}",
+                    style="bold cyan",
+                ),
+                box=box.ROUNDED,
+                header_style="bold",
+                padding=(0, 1),
+            )
+            table.add_column("Day", style="bold", no_wrap=True)
+            table.add_column("Reservations", overflow="fold")
             current_week = week
 
         label = f"{_WEEKDAYS[current.weekday()]} {_MONTHS[current.month - 1]} {current.day}"
         day_reservations = by_date.get(current, [])
         if day_reservations:
-            activities = ", ".join(item.activity for item in day_reservations)
-            lines.append(f"{label}: {activities}")
+            activities = Text()
+            for index, item in enumerate(day_reservations):
+                if index:
+                    activities.append("\n")
+                activities.append("• ", style="green")
+                activities.append(item.activity)
+            table.add_row(Text(label, style="cyan"), activities)
         else:
-            lines.append(f"{label}: no reservations")
+            table.add_row(
+                Text(label, style="cyan"),
+                Text("No reservations", style="dim italic"),
+            )
         current += timedelta(days=1)
-    return "\n".join(lines)
+
+    if table is not None:
+        console.print(table)
 
 
 @app.command("get-all-reservations")
@@ -177,7 +202,7 @@ def check_reservation(
     start_date: Optional[date] = typer.Option(None, "--start-date", help="First date, inclusive (YYYY-MM-DD)."),
     end_date: Optional[date] = typer.Option(None, "--end-date", help="Last date, inclusive (YYYY-MM-DD)."),
     output_format: ReservationFormat = typer.Option(
-        ReservationFormat.JSON,
+        ReservationFormat.PRETTY,
         "--format",
         help="Output as the original JSON subset or a weekly summary.",
     ),
@@ -200,4 +225,4 @@ def check_reservation(
     if output_format is ReservationFormat.JSON:
         print(_RESERVATIONS.dump_json(matches).decode())
     else:
-        print(_format_pretty(matches, start, end))
+        _print_pretty(matches, start, end)
