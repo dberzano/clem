@@ -10,7 +10,7 @@ import typer
 from pydantic import TypeAdapter, ValidationError
 from rich import box
 from rich.console import Console
-from rich.panel import Panel
+from rich.table import Table
 from rich.text import Text
 
 from .client import Client
@@ -151,13 +151,23 @@ def _print_pretty(reservations: list[Reservation], start_date: date, end_date: d
     activity_colors: dict[str, str] = {}
     current = start_date
     current_week = None
+    table: Table | None = None
     while current <= end_date:
         iso_date = current.isocalendar()
         week = (iso_date.year, iso_date.week)
         if week != current_week:
-            if current_week is not None:
+            if table is not None:
+                console.print(table)
                 console.print()
-            console.rule(Text(f"{iso_date.year} · Week {iso_date.week:02d}", style="bold cyan"), style="cyan")
+            table = Table(
+                title=Text(f"{iso_date.year} · Week {iso_date.week:02d}", style="bold cyan"),
+                box=box.ROUNDED,
+                header_style="bold",
+                padding=(0, 1),
+                show_lines=True,
+            )
+            table.add_column("Day", style="bold", no_wrap=True)
+            table.add_column("Reservations", overflow="fold")
             current_week = week
 
         label = f"{_WEEKDAYS[current.weekday()]} {_MONTHS[current.month - 1]} {current.day}"
@@ -176,19 +186,11 @@ def _print_pretty(reservations: list[Reservation], start_date: date, end_date: d
                 activities.append(item.activity, style=style)
         else:
             activities = Text("No reservations", style="dim italic")
-
-        console.print(
-            Panel(
-                activities,
-                title=Text(label, style="bold cyan"),
-                title_align="left",
-                box=box.ROUNDED,
-                border_style="cyan",
-                padding=(0, 1),
-                expand=True,
-            )
-        )
+        table.add_row(Text(label, style="cyan"), activities)
         current += timedelta(days=1)
+
+    if table is not None:
+        console.print(table)
 
 
 @app.command("get-all-reservations")
