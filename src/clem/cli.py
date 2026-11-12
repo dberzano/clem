@@ -27,13 +27,11 @@ logger = logging.getLogger(__name__)
 _WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 _ACTIVITY_COLORS = (
-    "cyan",
     "green",
     "magenta",
     "yellow",
     "blue",
     "red",
-    "bright_cyan",
     "bright_green",
     "bright_magenta",
     "bright_blue",
