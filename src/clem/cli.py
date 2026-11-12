@@ -10,7 +10,7 @@ import typer
 from pydantic import TypeAdapter, ValidationError
 from rich import box
 from rich.console import Console
-from rich.table import Table
+from rich.panel import Panel
 from rich.text import Text
 
 from .client import Client
@@ -151,24 +151,13 @@ def _print_pretty(reservations: list[Reservation], start_date: date, end_date: d
     activity_colors: dict[str, str] = {}
     current = start_date
     current_week = None
-    table: Table | None = None
     while current <= end_date:
         iso_date = current.isocalendar()
         week = (iso_date.year, iso_date.week)
         if week != current_week:
-            if table is not None:
-                console.print(table)
-            table = Table(
-                title=Text(
-                    f"{iso_date.year} · Week {iso_date.week:02d}",
-                    style="bold cyan",
-                ),
-                box=box.ROUNDED,
-                header_style="bold",
-                padding=(0, 1),
-            )
-            table.add_column("Day", style="bold", no_wrap=True)
-            table.add_column("Reservations", overflow="fold")
+            if current_week is not None:
+                console.print()
+            console.rule(Text(f"{iso_date.year} · Week {iso_date.week:02d}", style="bold cyan"), style="cyan")
             current_week = week
 
         label = f"{_WEEKDAYS[current.weekday()]} {_MONTHS[current.month - 1]} {current.day}"
@@ -185,16 +174,21 @@ def _print_pretty(reservations: list[Reservation], start_date: date, end_date: d
                 style = f"bold {color}"
                 activities.append("• ", style=style)
                 activities.append(item.activity, style=style)
-            table.add_row(Text(label, style="cyan"), activities)
         else:
-            table.add_row(
-                Text(label, style="cyan"),
-                Text("No reservations", style="dim italic"),
-            )
-        current += timedelta(days=1)
+            activities = Text("No reservations", style="dim italic")
 
-    if table is not None:
-        console.print(table)
+        console.print(
+            Panel(
+                activities,
+                title=Text(label, style="bold cyan"),
+                title_align="left",
+                box=box.ROUNDED,
+                border_style="cyan",
+                padding=(0, 1),
+                expand=True,
+            )
+        )
+        current += timedelta(days=1)
 
 
 @app.command("get-all-reservations")
