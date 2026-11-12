@@ -26,6 +26,20 @@ logger = logging.getLogger(__name__)
 
 _WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+_ACTIVITY_COLORS = (
+    "cyan",
+    "green",
+    "magenta",
+    "yellow",
+    "blue",
+    "red",
+    "bright_cyan",
+    "bright_green",
+    "bright_magenta",
+    "bright_blue",
+    "bright_red",
+    "bright_yellow",
+)
 
 
 class ReservationFormat(str, Enum):
@@ -133,7 +147,8 @@ def _print_pretty(reservations: list[Reservation], start_date: date, end_date: d
     for reservation in reservations:
         by_date.setdefault(reservation.date, []).append(reservation)
 
-    console = Console(file=sys.stdout, highlight=False)
+    console = Console(file=sys.stdout, highlight=False, no_color=False)
+    activity_colors: dict[str, str] = {}
     current = start_date
     current_week = None
     table: Table | None = None
@@ -163,8 +178,13 @@ def _print_pretty(reservations: list[Reservation], start_date: date, end_date: d
             for index, item in enumerate(day_reservations):
                 if index:
                     activities.append("\n")
-                activities.append("• ", style="green")
-                activities.append(item.activity)
+                color = activity_colors.get(item.activity)
+                if color is None:
+                    color = _ACTIVITY_COLORS[len(activity_colors) % len(_ACTIVITY_COLORS)]
+                    activity_colors[item.activity] = color
+                style = f"bold {color}"
+                activities.append("• ", style=style)
+                activities.append(item.activity, style=style)
             table.add_row(Text(label, style="cyan"), activities)
         else:
             table.add_row(

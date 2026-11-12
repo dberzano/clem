@@ -47,7 +47,7 @@ The default date range is Monday through Friday of the current week in `Europe/P
 uv run clem check-reservation --kid "Child Name" --start-date 2026-11-09 --end-date 2026-11-13
 ```
 
-`--format pretty` is the default: Rich tables group the requested days by ISO year/week and list each day's activities, or `No reservations`. Use `--format json` for the matching records unchanged from the all-reservations data.
+`--format pretty` is the default: Rich tables group the requested days by ISO year/week and list each day's activities, or `No reservations`. Activities use distinct colors from a Rich palette to aid visual scanning. Use `--format json` for the matching records unchanged from the all-reservations data.
 
 Each JSON record includes the child name, activity, place, unit, date, quantity, and whether that day is editable. Treat the output as personal information and avoid sharing or publishing it.
 
